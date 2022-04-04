@@ -1,0 +1,11 @@
+    @Test
+    public void test01() throws Exception {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setName("李");
+        KieSession kieSession = KieSessionUtils.getAllRules();
+        kieSession.insert(userInfo);
+//        kieSession.getAgenda().getAgendaGroup("abc").setFocus();
+        kieSession.fireAllRules();
+        kieSession.dispose();
+
+    }
