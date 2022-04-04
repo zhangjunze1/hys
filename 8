@@ -1,0 +1,167 @@
+package helloworld
+rule "rule_helloworld"
+    when
+        eval(true)
+    then
+        System.out.println("规则：rule_helloworld触发...");
+end
+
+
+
+
+
+
+
+import org.kie.api.KieBase;
+import org.kie.api.KieServices;
+import org.kie.api.builder.KieBuilder;
+import org.kie.api.builder.KieFileSystem;
+import org.kie.api.builder.KieRepository;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.spring.KModuleBeanFactoryPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.core.io.Resource;
+import java.io.IOException;
+/**
+ * 规则引擎配置类
+ */
+@Configuration
+public class DroolsConfig {
+    //指定规则文件存放的目录
+    private static final String RULES_PATH = "rules/";
+    private final KieServices kieServices = KieServices.Factory.get();
+    @Bean
+    @ConditionalOnMissingBean
+    public KieFileSystem kieFileSystem() throws IOException {
+        KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
+        ResourcePatternResolver resourcePatternResolver = 
+            new PathMatchingResourcePatternResolver();
+        Resource[] files = 
+            resourcePatternResolver.getResources("classpath*:" + RULES_PATH + "*.*");
+        String path = null;
+        for (Resource file : files) {
+            path = RULES_PATH + file.getFilename();
+            kieFileSystem.write(ResourceFactory.newClassPathResource(path, "UTF-8"));
+        }
+        return kieFileSystem;
+    }
+    @Bean
+    @ConditionalOnMissingBean
+    public KieContainer kieContainer() throws IOException {
+        KieRepository kieRepository = kieServices.getRepository();
+        kieRepository.addKieModule(kieRepository::getDefaultReleaseId);
+        KieBuilder kieBuilder = kieServices.newKieBuilder(kieFileSystem());
+        kieBuilder.buildAll();
+        return kieServices.newKieContainer(kieRepository.getDefaultReleaseId());
+    }
+    @Bean
+    @ConditionalOnMissingBean
+    public KieBase kieBase() throws IOException {
+        return kieContainer().getKieBase();
+    }
+    @Bean
+    @ConditionalOnMissingBean
+    public KModuleBeanFactoryPostProcessor kiePostProcessor() {
+        return new KModuleBeanFactoryPostProcessor();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import org.kie.api.KieBase;
+import org.kie.api.runtime.KieSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+​
+@Service
+public class RuleService {
+    @Autowired
+    private KieBase kieBase;
+    public void rule(){
+        KieSession kieSession = kieBase.newKieSession();
+        kieSession.fireAllRules();
+        kieSession.dispose();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import com.itheima.drools.service.RuleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+​
+@RestController
+@RequestMapping("/hello")
+public class HelloController {
+    @Autowired
+    private RuleService ruleService;
+    @RequestMapping("/rule")
+    public String rule(){
+        ruleService.rule();
+        return "OK";
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+​
+@SpringBootApplication
+public class DroolsApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DroolsApplication.class,args);
+    }
+}
