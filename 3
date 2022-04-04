@@ -1,0 +1,12 @@
+package rules;
+dialect "java"
+
+import com.gaolang.entity.*;
+
+
+rule "评估用户"
+when
+  $u : UserInfo(name == "张" || name == "李")
+then
+  System.err.println("用户"+$u);
+ end
