@@ -1,0 +1,113 @@
+public class Order {
+    private Double originalPrice;//订单原始价格，即优惠前价格
+    private Double realPrice;//订单真实价格，即优惠后价格
+​
+    public String toString() {
+        return "Order{" +
+                "originalPrice=" + originalPrice +
+                ", realPrice=" + realPrice +
+                '}';
+    }
+​
+    public Double getOriginalPrice() {
+        return originalPrice;
+    }
+​
+    public void setOriginalPrice(Double originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+​
+    public Double getRealPrice() {
+        return realPrice;
+    }
+​
+    public void setRealPrice(Double realPrice) {
+        this.realPrice = realPrice;
+    }
+}
+
+
+
+
+
+
+
+
+
+//规则一：所购图书总价在100元以下的没有优惠
+rule "book_discount_1"
+    when
+        $order:Order(originalPrice < 100)
+    then
+        $order.setRealPrice($order.getOriginalPrice());
+        System.out.println("成功匹配到规则一：所购图书总价在100元以下的没有优惠");
+end
+​
+//规则二：所购图书总价在100到200元的优惠20元
+rule "book_discount_2"
+    when
+        $order:Order(originalPrice < 200 && originalPrice >= 100)
+    then
+        $order.setRealPrice($order.getOriginalPrice() - 20);
+        System.out.println("成功匹配到规则二：所购图书总价在100到200元的优惠20元");
+end
+​
+//规则三：所购图书总价在200到300元的优惠50元
+rule "book_discount_3"
+    when
+        $order:Order(originalPrice <= 300 && originalPrice >= 200)
+    then
+        $order.setRealPrice($order.getOriginalPrice() - 50);
+        System.out.println("成功匹配到规则三：所购图书总价在200到300元的优惠50元");
+end
+​
+//规则四：所购图书总价在300元以上的优惠100元
+rule "book_discount_4"
+    when
+        $order:Order(originalPrice >= 300)
+    then
+        $order.setRealPrice($order.getOriginalPrice() - 100);
+        System.out.println("成功匹配到规则四：所购图书总价在300元以上的优惠100元");
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Test
+public void test1(){
+    KieServices kieServices = KieServices.Factory.get();
+    KieContainer kieClasspathContainer = kieServices.getKieClasspathContainer();
+    //会话对象，用于和规则引擎交互
+    KieSession kieSession = kieClasspathContainer.newKieSession();
+​
+    //构造订单对象，设置原始价格，由规则引擎根据优惠规则计算优惠后的价格
+    Order order = new Order();
+    order.setOriginalPrice(210D);
+​
+    //将数据提供给规则引擎，规则引擎会根据提供的数据进行规则匹配
+    kieSession.insert(order);
+​
+    //激活规则引擎，如果规则匹配成功则执行规则
+    kieSession.fireAllRules();
+    //关闭会话
+    kieSession.dispose();
+​
+    System.out.println("优惠前原始价格：" + order.getOriginalPrice() +
+                       "，优惠后价格：" + order.getRealPrice());
+}
